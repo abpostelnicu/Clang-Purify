@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <ostream>
 #include "Debug.h"
+#include "ClangDefines.h"
 
 using namespace llvm;
 using namespace clang;

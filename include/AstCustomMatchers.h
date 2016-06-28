@@ -1,3 +1,5 @@
+#include "ClangDefines.h"
+
 namespace clang {
   namespace ast_matchers {
     AST_MATCHER(CXXRecordDecl, isNotInSystemHeader) {

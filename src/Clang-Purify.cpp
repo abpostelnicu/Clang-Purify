@@ -16,6 +16,8 @@
 #include "AstCustomMatchers.h"
 #include "ClangParser.h"
 #include "Debug.h"
+#include "ClangDefines.h"
+
 
 
 int main(int argc, const char **argv) {
@@ -24,7 +26,8 @@ int main(int argc, const char **argv) {
     return 1;
 
   MatchFinder finder;
-  finder.addMatcher(recordDecl(isInterestingForUninitializedInCtor())
+    
+  finder.addMatcher(cxxRecordDecl(isInterestingForUninitializedInCtor())
                                 .bind("class"), &nonInitializedMemberChecker);
 
   ClangParser parser;

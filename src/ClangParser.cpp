@@ -41,7 +41,7 @@ ClangParser::ClangParser() {
   m_CompilerInstance.createASTContext();
   if (m_CompilerInstance.hasPreprocessor()) {
     clang::Preprocessor & preprocessor = m_CompilerInstance.getPreprocessor();
-    preprocessor.getBuiltinInfo().InitializeBuiltins(preprocessor.getIdentifierTable(), preprocessor.getLangOpts());
+    preprocessor.getBuiltinInfo().initializeBuiltins(preprocessor.getIdentifierTable(), preprocessor.getLangOpts());
   }
 }
 

@@ -8,6 +8,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Parse/ParseAST.h"
 #include "llvm/Support/Host.h"
+#include "ClangDefines.h"
 
 class ClangParser
 {
