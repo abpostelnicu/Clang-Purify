@@ -35,7 +35,6 @@ namespace DiagnosticsMatcher {
     void updateVarMap(std::unordered_map<std::string, bool>& variablesMap,
       StringRef varName);
     bool buildResolverMap(CallExpr *callExp,
-      std::unordered_map<std::string, bool>& variablesMap,
       std::unordered_map<std::string, std::string>& resolverMap,
       std::unordered_map<std::string, std::string>& newResolverMap);
     bool getVarNameFromExprWithThisCheck(Expr *expr, StringRef& varName);

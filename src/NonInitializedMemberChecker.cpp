@@ -51,7 +51,7 @@ getVarNameFromExprWithThisCheck(Expr *expr, StringRef& varName) {
 }
 
 bool DiagnosticsMatcher::NonInitializedMemberChecker::buildResolverMap(
-    CallExpr *callExpr, std::unordered_map<std::string, bool>& variablesMap,
+    CallExpr *callExpr,
     std::unordered_map<std::string, std::string>& resolverMap,
     std::unordered_map<std::string, std::string>& newResolverMap) {
 
@@ -110,11 +110,8 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::updateVarMap(
   std::unordered_map<std::string, bool>& variablesMap,
   StringRef varName) {
 
-  auto varFromMap = variablesMap.find(varName);
-  // We found it!
-  if (varFromMap != variablesMap.end()) {
-    varFromMap->second = true;
-  }
+  variablesMap[varName] = true;
+    
 }
 
 void DiagnosticsMatcher::NonInitializedMemberChecker::checkValueDecl(
@@ -216,29 +213,27 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
       evaluateExpression(exprRight, variablesMap, resolverMap);
     }
   } else if (IfStmt *ifStmt = dyn_cast_or_null<IfStmt>(stmtExpr)){
-    // If this is an if statement go through then and else Stmts,
+    // If this is an if statement go through then and else statements,
     // if else statement is not present just skip it
     Stmt *thenStmt = ifStmt->getThen();
     Stmt *elseStmt = ifStmt->getElse();
-
-    if (thenStmt && elseStmt) {
-      std::unordered_map<std::string, bool> thenMap = variablesMap;
-      std::unordered_map<std::string, bool> elseMap = variablesMap;
       
+    if (thenStmt && elseStmt) {
+      std::unordered_map<std::string, bool> thenMap;
+      std::unordered_map<std::string, bool> elseMap;
+          
       evaluateExpression(thenStmt, thenMap, resolverMap);
       evaluateExpression(elseStmt, elseMap, resolverMap);
-      
-      // loop through the thenMap and elseMap and look for the same variables set to true  and
-      // add to variablesMap only the elemenets that are present in both maps set to true
+          
+      // Loop through the thenMap and elseMap and look for the same variables
+      // set to true  and add to variablesMap only the elements that are present
+      // in both maps set to true
       for (auto& item: thenMap) {
         if (item.second && elseMap[item.first]) {
           variablesMap[item.first] = item.second;
-        } else {
-          Log("Member: " << item.first <<" Not found on else branch");
         }
       }
     }
-    
   } if (ForStmt *forStmt = dyn_cast_or_null<ForStmt>(stmtExpr)) {
     // If this is a ForStmt go through it's body Stmt
     Stmt *bodyFor = forStmt->getBody();
@@ -278,8 +273,7 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
       }
 
       std::unordered_map<std::string, std::string> newResolverMap;
-      bool isValid = buildResolverMap(funcCall, variablesMap, resolverMap,
-          newResolverMap);
+      bool isValid = buildResolverMap(funcCall, resolverMap, newResolverMap);
       // recursive call evaluateExpression
       if (isValid) {
         evaluateExpression(stmt, variablesMap, newResolverMap);
