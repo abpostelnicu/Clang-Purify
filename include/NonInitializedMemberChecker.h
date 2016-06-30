@@ -40,6 +40,7 @@ namespace DiagnosticsMatcher {
     bool getVarNameFromExprWithThisCheck(Expr *expr, StringRef& varName);
     void evaluateExpression(Stmt *stmtExpr,
       std::unordered_map<std::string, bool>& variablesMap,
-      std::unordered_map<std::string, std::string>& resolverMap);
+      std::unordered_map<std::string, std::string>& resolverMap,
+      uint8_t depth);
   };
 }

@@ -11,5 +11,6 @@
 #define ClangDefines_h
 
 
+#define MAX_DEPTH 10
 
 #endif /* ClangDefines_h */

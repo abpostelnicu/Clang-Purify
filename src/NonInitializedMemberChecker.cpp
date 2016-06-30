@@ -194,9 +194,14 @@ runThroughDefaultFunctions(CallExpr *funcCall,
 
 void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
   Stmt *stmtExpr, std::unordered_map<std::string, bool>& variablesMap,
-  std::unordered_map<std::string, std::string>& resolverMap) {
+  std::unordered_map<std::string, std::string>& resolverMap, uint8_t depth) {
   stmtExpr = stmtExpr->IgnoreImplicit();
-
+  
+  // Check depth and if it's equal equal with MAX_DEPTH return
+  if (depth == MAX_DEPTH) {
+    return;
+  }
+  
   if (BinaryOperator *binOp = dyn_cast_or_null<BinaryOperator>(stmtExpr)) {
     // If BinaryOperator check the left and right operands - left for value decl
     // right for function call
@@ -210,7 +215,7 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
       if (!exprRight) {
         return;
       }
-      evaluateExpression(exprRight, variablesMap, resolverMap);
+      evaluateExpression(exprRight, variablesMap, resolverMap, depth + 1);
     }
   } else if (IfStmt *ifStmt = dyn_cast_or_null<IfStmt>(stmtExpr)){
     // If this is an if statement go through then and else statements,
@@ -222,8 +227,8 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
       std::unordered_map<std::string, bool> thenMap;
       std::unordered_map<std::string, bool> elseMap;
           
-      evaluateExpression(thenStmt, thenMap, resolverMap);
-      evaluateExpression(elseStmt, elseMap, resolverMap);
+      evaluateExpression(thenStmt, thenMap, resolverMap, depth + 1);
+      evaluateExpression(elseStmt, elseMap, resolverMap, depth + 1);
           
       // Loop through the thenMap and elseMap and look for the same variables
       // set to true  and add to variablesMap only the elements that are present
@@ -238,24 +243,24 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
     // If this is a ForStmt go through it's body Stmt
     Stmt *bodyFor = forStmt->getBody();
     if (bodyFor) {
-      evaluateExpression(bodyFor, variablesMap, resolverMap);
+      evaluateExpression(bodyFor, variablesMap, resolverMap, depth + 1);
     }
   }  else if (WhileStmt *whileStmt = dyn_cast_or_null<WhileStmt>(stmtExpr)) {
     // If this is a WhileStmt go through it's body Stmt
     Stmt *bodyWhile = whileStmt->getBody();
     if (bodyWhile) {
-      evaluateExpression(bodyWhile, variablesMap, resolverMap);
+      evaluateExpression(bodyWhile, variablesMap, resolverMap, depth + 1);
     }
   } else if (DoStmt *doStmt = dyn_cast_or_null<DoStmt>(stmtExpr)) {
     // If this is a DoStmt go through it's body Stmt
     Stmt *bodyDo = doStmt->getBody();
     if (bodyDo) {
-      evaluateExpression(bodyDo, variablesMap, resolverMap);
+      evaluateExpression(bodyDo, variablesMap, resolverMap, depth + 1);
     }
   } else if (CompoundStmt *cmpdStmt = dyn_cast_or_null<CompoundStmt>(stmtExpr)) {
     // This Stmt is actually CompoundStmt then loop through all it's children
     for (auto child : cmpdStmt->children()) {
-      evaluateExpression(child, variablesMap, resolverMap);
+      evaluateExpression(child, variablesMap, resolverMap, depth + 1);
     }
   } else if (CallExpr *funcCall = dyn_cast_or_null<CallExpr>(stmtExpr)) {
     // This is a CallExpr if it has body analyze it else maybe it's a default
@@ -276,7 +281,7 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
       bool isValid = buildResolverMap(funcCall, resolverMap, newResolverMap);
       // recursive call evaluateExpression
       if (isValid) {
-        evaluateExpression(stmt, variablesMap, newResolverMap);
+        evaluateExpression(stmt, variablesMap, newResolverMap, depth + 1);
       } else {
         // check to if it's member call expr
         CXXMemberCallExpr *memberFuncCall =
@@ -284,7 +289,7 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
 
         if (memberFuncCall && isa<CXXThisExpr>(
             memberFuncCall->getImplicitObjectArgument())) {
-          evaluateExpression(stmt, variablesMap, newResolverMap);
+          evaluateExpression(stmt, variablesMap, newResolverMap, depth + 1);
         }
       }
     } else {
@@ -375,7 +380,7 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::run(
     }
 
     // Maybe it's initialized in the body.
-    evaluateExpression(body, variablesMap, resolverMap);
+    evaluateExpression(body, variablesMap, resolverMap, 0);
 
     // look through the map for unmarked variables and pop error message, also
     // reset the ones that are set for the following ctor to add it
