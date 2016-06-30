@@ -1,3 +1,6 @@
+#ifndef NonInitializedMemberChecker_h
+#define NonInitializedMemberChecker_h
+
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
@@ -44,3 +47,5 @@ namespace DiagnosticsMatcher {
       uint8_t depth);
   };
 }
+
+#endif // NonInitializedMemberChecker_h

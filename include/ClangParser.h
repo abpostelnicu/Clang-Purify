@@ -1,3 +1,6 @@
+#ifndef ClangParser_h
+#define ClangParser_h
+
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
@@ -28,3 +31,5 @@ public:
 
   clang::ASTContext& GetASTContext() { return m_CompilerInstance.getASTContext(); }
 };
+
+#endif // ClangParser_h

@@ -13,6 +13,7 @@
 #include <ostream>
 
 #include "NonInitializedMemberChecker.h"
+#include "AssertAttributionChecker.h"
 #include "AstCustomMatchers.h"
 #include "ClangParser.h"
 #include "Debug.h"
@@ -22,13 +23,19 @@
 
 int main(int argc, const char **argv) {
   DiagnosticsMatcher::NonInitializedMemberChecker nonInitializedMemberChecker;
+  DiagnosticsMatcher::AssertAttributionChecker    assertAttributionChecker;
+  
   if (argc < 2 )
     return 1;
 
   MatchFinder finder;
-    
+  
+
+  finder.addMatcher(callExpr(isAssertion())
+                    .bind("funcCall"), &assertAttributionChecker);
+  
   finder.addMatcher(cxxRecordDecl(isInterestingForUninitializedInCtor())
-                                .bind("class"), &nonInitializedMemberChecker);
+                    .bind("class"), &nonInitializedMemberChecker);
 
   ClangParser parser;
   parser.parseAST(argv[1], finder);

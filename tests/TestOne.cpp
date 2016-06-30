@@ -1,3 +1,14 @@
+
+
+void AssertImpl(bool expr) {
+  
+}
+
+void TestAssertAttrib() {
+  int p;
+  AssertImpl(p = 2);
+}
+
 class TestOne {
 	int var1 = 0;	// initialized inline
 	int var2;		// initialized in constructor initialization list

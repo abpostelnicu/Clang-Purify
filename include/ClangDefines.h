@@ -5,10 +5,11 @@
 //  Created by Andi-Bogdan Postelnicu on 27/06/16.
 //
 //
-#include "clang/Basic/Version.h"
-
 #ifndef ClangDefines_h
 #define ClangDefines_h
+
+#include "clang/Basic/Version.h"
+#include "Debug.h"
 
 
 #define MAX_DEPTH 10

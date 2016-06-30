@@ -1,3 +1,6 @@
+#ifndef AstCustomMatchers_h
+#define AstCustomMatchers_h
+
 #include "ClangDefines.h"
 
 namespace clang {
@@ -42,5 +45,19 @@ namespace clang {
         return true;
       }
     }
+  
+  
+    AST_MATCHER(CallExpr, isAssertion) {
+      static const std::string assertName = "AssertImpl";
+      const FunctionDecl *method = Node.getDirectCallee();
+      
+      std::cout<<method->getName().data();
+      
+      if (method->getName() == assertName)
+        return true;
+      return false;
+    }
   }
 }
+
+#endif // AstCustomMatchers_h
