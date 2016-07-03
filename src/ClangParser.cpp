@@ -33,9 +33,12 @@ ClangParser::ClangParser() {
 
   // Need to set the target before AST. Adjust the default target options and create a target
   m_CompilerInstance.getTargetOpts().Triple = llvm::sys::getProcessTriple();  
-  std::shared_ptr<clang::TargetOptions> ptr(&m_CompilerInstance.getTargetOpts());
-  m_CompilerInstance.setTarget(clang::TargetInfo::CreateTargetInfo(m_CompilerInstance.getDiagnostics(), ptr));
-
+  
+  m_TargetOptions = std::make_shared<clang::TargetOptions>();
+  *m_TargetOptions = m_CompilerInstance.getTargetOpts();
+  
+  m_CompilerInstance.setTarget(clang::TargetInfo::CreateTargetInfo(m_CompilerInstance.getDiagnostics(), (m_TargetOptions)));
+  
   // Create pre-processor and AST Context
   m_CompilerInstance.createPreprocessor(clang::TranslationUnitKind::TU_Module);
   m_CompilerInstance.createASTContext();

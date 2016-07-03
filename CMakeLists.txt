@@ -30,7 +30,6 @@ include_directories(include)
 
 link_directories(${LLVM_PATH}/lib)
 
-#set(SOURCE_FILES main.cpp)
 
 file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
 file(GLOB_RECURSE INCLUDE_FILES "include/*.h")
@@ -41,12 +40,11 @@ add_executable(Clang-Purify ${INCLUDE_FILES} ${SOURCE_FILES} ${TEST_FILES})
 
 
 target_link_libraries(Clang-Purify
-        #pthread
         ffi
         edit
-        #tinfo
+	if(APPLE) 
         ncurses
-        #dl
+	endif()
         m
         clangFrontend
         clangFrontendTool
@@ -86,7 +84,9 @@ target_link_libraries(Clang-Purify
         LLVMCore
         LLVMSupport
         z
-        #tinfo
+	if(LINUX) 
+        tinfo
+	endif()
         dl
         pthread
 )

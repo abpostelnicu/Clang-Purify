@@ -16,7 +16,8 @@
 class ClangParser
 {
   clang::CompilerInstance m_CompilerInstance;
-
+  std::shared_ptr<clang::TargetOptions> m_TargetOptions;
+  
   void prepareCompilerforFile(const char* szSourceCodeFilePath);
 
 public:
