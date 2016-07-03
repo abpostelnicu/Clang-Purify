@@ -38,13 +38,11 @@ file(GLOB_RECURSE TEST_FILES "tests/*.cpp")
 
 add_executable(Clang-Purify ${INCLUDE_FILES} ${SOURCE_FILES} ${TEST_FILES})
 
+if(LINUX) 
 
 target_link_libraries(Clang-Purify
         ffi
         edit
-	if(APPLE) 
-        ncurses
-	endif()
         m
         clangFrontend
         clangFrontendTool
@@ -73,7 +71,6 @@ target_link_libraries(Clang-Purify
         LLVMScalarOpts
         LLVMInstCombine
         LLVMTransformUtils
-        #LLVMipa
         LLVMAnalysis
         LLVMTarget
         LLVMOption # Support
@@ -84,9 +81,60 @@ target_link_libraries(Clang-Purify
         LLVMCore
         LLVMSupport
         z
-	if(LINUX) 
         tinfo
-	endif()
         dl
         pthread
 )
+
+endif()
+
+if(APPLE) 
+
+target_link_libraries(Clang-Purify
+        ffi
+        edit
+        ncurses
+        m
+        clangFrontend
+        clangFrontendTool
+        clangSerialization
+        clangDriver
+        clangCodeGen # 1
+        clangParse
+        clangSema
+        clangStaticAnalyzerCheckers # 2
+        clangStaticAnalyzerCore #3
+        clangAnalysis
+        clangIndex
+        clangRewrite
+        clangAST
+        clangASTMatchers
+        clangBasic
+        clangEdit
+        clangLex
+        clangTooling
+        LLVMX86AsmParser # MC, MCParser, Support, X86Desc, X86Info
+        LLVMX86Desc # MC, Support, X86AsmPrinter, X86Info
+        LLVMX86AsmPrinter # MC, Support, X86Utils
+        LLVMX86Info # MC, Support, Target
+        LLVMX86Utils # Core, Support
+        LLVMipo
+        LLVMScalarOpts
+        LLVMInstCombine
+        LLVMTransformUtils
+        LLVMAnalysis
+        LLVMTarget
+        LLVMOption # Support
+        LLVMMCParser # MC, Support
+        LLVMMC # Object, Support
+        LLVMObject # BitReader, Core, Support
+        LLVMBitReader # Core, Support
+        LLVMCore
+        LLVMSupport
+        z
+        dl
+        pthread
+)
+
+endif()
+
