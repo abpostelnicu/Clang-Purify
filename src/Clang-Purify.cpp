@@ -18,26 +18,41 @@
 #include "ClangParser.h"
 #include "Debug.h"
 #include "ClangDefines.h"
+#include "Config.h"
 
 
 
 int main(int argc, const char **argv) {
+
+  ClangParser parser;
+  const char **arguments = nullptr;
+  int argCount = 0;
+  MatchFinder finder;
   DiagnosticsMatcher::NonInitializedMemberChecker nonInitializedMemberChecker;
   DiagnosticsMatcher::AssertAttributionChecker    assertAttributionChecker;
   
-  if (argc < 2 )
-    return 1;
-
-  MatchFinder finder;
-  
-
   finder.addMatcher(callExpr(isAssertion())
                     .bind("funcCall"), &assertAttributionChecker);
   
   finder.addMatcher(cxxRecordDecl(isInterestingForUninitializedInCtor())
                     .bind("class"), &nonInitializedMemberChecker);
 
-  ClangParser parser;
-  parser.parseAST(argv[1], finder);
+#if USE_TEST_MODE
+  arguments = (const char**)CppTestsList;
+  argCount = sizeof(CppTestsList) / sizeof(char*);
+#else
+  if (argc < 2 )
+    return 1;
+  
+  // substract 1 since we don't want to have the exacutable name
+  argCount = argc - 1;
+  // add 1 since argv[0] is the programs name
+  arguments = argv + 1;
+#endif
+  
+  for (int i =0; i < argCount; i++) {
+    parser.parseAST(arguments[i], finder);
+  }
+  
   return 0;
 }

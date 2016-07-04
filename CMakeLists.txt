@@ -38,6 +38,14 @@ file(GLOB_RECURSE TEST_FILES "tests/*.cpp")
 
 add_executable(Clang-Purify ${INCLUDE_FILES} ${SOURCE_FILES} ${TEST_FILES})
 
+
+# get full path for test files
+get_filename_component(TEST_FILES_FULL_PATH "tests/" ABSOLUTE)
+
+# add a definition in project with full path 
+target_compile_definitions(Clang-Purify PRIVATE TEST_FILES_PATH="${TEST_FILES_FULL_PATH}")
+
+
 if(LINUX) 
 
 target_link_libraries(Clang-Purify
