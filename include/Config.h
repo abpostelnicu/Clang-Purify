@@ -9,7 +9,7 @@
 #ifndef Config_h
 #define Config_h
 
-#define USE_TEST_MODE 0 // run the test cases
+#define USE_TEST_MODE 1 // run the test cases
 
 
 #if USE_TEST_MODE
