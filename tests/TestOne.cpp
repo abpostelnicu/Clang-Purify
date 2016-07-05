@@ -1,12 +1,16 @@
-
-
-void AssertImpl(bool expr) {
+static inline void AssertImpl(bool expr) {
   
 }
 
+#define ASSERT_CHECK_ATTRIB(expr) AssertImpl(!(expr))
+
+#define ASSERT(expr) \
+  ASSERT_CHECK_ATTRIB(expr) \
+
+
 void TestAssertAttrib() {
   int p;
-  AssertImpl(p = 2);
+  ASSERT(p = 2);
 }
 
 class TestOne {

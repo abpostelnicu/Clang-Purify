@@ -12,9 +12,8 @@ void DiagnosticsMatcher::AssertAttributionChecker::run(const MatchFinder::MatchR
   
   DiagnosticsEngine &Diag = Result.Context->getDiagnostics();
   unsigned assignInsteadOfComp = Diag.getDiagnosticIDs()->getCustomDiagID(
-                                    DiagnosticIDs::Error,
-                                    "The variable will be assigned the value that it was intended"\
-                                    "to compare against, causing the result to always be true");
+      DiagnosticIDs::Error, "Forbidden attribution in assert expression, "
+                            "causing the result to always be true");
   
   CallExpr *funcCall = const_cast<CallExpr*>(Result.Nodes.getNodeAs<CallExpr>("funcCall"));
   
@@ -27,14 +26,30 @@ void DiagnosticsMatcher::AssertAttributionChecker::run(const MatchFinder::MatchR
   
   Expr *exprArg = funcCall->getArg(0);
   
-  if (!exprArg) {
+  // Ignore all implicit castings that are done
+  exprArg = exprArg->IgnoreImplicit();
+  
+  // Only evaluate the first argument from the CallExpr argument list.
+  // The syntax of the call argument will look similar with:
+  // !(Expr)
+  // First there is an UnaryOperator followed by ParenExpr then check for
+  // a binary operator of type BO_Assign and if so trigger an error message.
+  const UnaryOperator *unOp = dyn_cast_or_null<UnaryOperator>(exprArg);
+  
+  if (!unOp) {
     return;
   }
   
-  exprArg = exprArg->IgnoreImplicit();
+  Expr *unOpResExpr = unOp->getSubExpr();
   
-  if (BinaryOperator *binOp = dyn_cast_or_null<BinaryOperator>(exprArg)) {
-    // If it's an BO_Assign than signal the problem
+  if (!unOpResExpr) {
+    return;
+  }
+  
+  // Strip off any ParenExpr or ImplicitCastExprs
+  unOpResExpr = unOpResExpr->IgnoreParenImpCasts();
+  
+  if (const BinaryOperator *binOp = dyn_cast_or_null<BinaryOperator>(unOpResExpr)) {
     if (binOp->getOpcode() == BO_Assign) {
       Diag.Report(funcCall->getLocStart(), assignInsteadOfComp);
     }

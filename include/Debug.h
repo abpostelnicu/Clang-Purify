@@ -1,13 +1,27 @@
+#ifndef Debug_h
+#define Debug_h
 
+#include "clang/Tooling/CommonOptionsParser.h"
+#include "clang/Tooling/Tooling.h"
+#include "clang/ASTMatchers/ASTMatchers.h"
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/ASTMatchers/ASTMatchFinder.h"
+#include "clang/CodeGen/CodeGenAction.h"
+#include "clang/Basic/TargetInfo.h"
+#include "clang/Lex/Preprocessor.h"
+#include "clang/Parse/ParseAST.h"
+#include "llvm/Support/Host.h"
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+
+#define DEBUG 
 
 #ifdef DEBUG
 
 #define Log(str)  do { cout <<"[" <<__func__<<"]"<< str << endl; } while(0)
 
-const std::string& printExpr(Expr *expr) {
+static inline const std::string& printExpr(clang::Expr *expr) {
   static clang::LangOptions LangOpts;
   LangOpts.CPlusPlus = true;
   static clang::PrintingPolicy Policy(LangOpts);
@@ -20,4 +34,6 @@ const std::string& printExpr(Expr *expr) {
 
 #else
 #define Log(str)  do {  } while(0)
+#endif
+
 #endif
