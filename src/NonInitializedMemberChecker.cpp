@@ -314,16 +314,19 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::run(
   if (!decl) {
     return;
   }
-
+  
+  // In some particular cases we have overloaded new operator so in this
+  // case do not continue the analysis because most likely there will be
+  // a memset performed on |this|
+  for (auto method : decl->methods()) {
+    if (method->getDeclName().getCXXOverloadedOperator() == OO_New) {
+      return;
+    }
+  }
+  
   // For each field, if they are builtinType and or if they are pointer add
   // to table
   for (auto field : decl->fields()) {
-    // Ignore fields if MOZ_IGNORE_INITIALIZATION is present.
-    //if (MozChecker::hasCustomAnnotation(field,
-    //    "moz_ignore_ctor_initialization")) {
-    //  continue;
-    //}
-
     QualType type = field->getType();
     // This should be OK because the reference types are mandated to be
     // initialized by the language.

@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 static inline void AssertImpl(bool expr) {
   
 }
@@ -15,11 +17,11 @@ void TestAssertAttrib() {
 
 class TestOne {
 	int var1 = 0;	// initialized inline
-	int var2;		// initialized in constructor initialization list
-	int var3;		// initialized by return value
-	int var4;		// initialized in if/else statement	
-	int var5;		// initialized only in if-then -> warning message triggered
-	int var6;		// initialized in InitVariableWithCond
+	int var2;     // initialized in constructor initialization list
+	int var3;     // initialized by return value
+	int var4;     // initialized in if/else statement
+	int var5;     // initialized only in if-then -> warning message triggered
+	int var6;     // initialized in InitVariableWithCond
 
 	int Initialize();
 	void InitVariable(int &var);
@@ -56,3 +58,10 @@ void TestOne::InitVariableWithCond(int &var) {
 	else
 		var = 2;
 }
+
+class NewOverload {
+  int a;
+  void *operator new(size_t size) {
+    return (void*)0xFF;
+  }
+};
