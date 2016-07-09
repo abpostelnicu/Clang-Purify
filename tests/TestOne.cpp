@@ -1,17 +1,42 @@
 #include <stddef.h>
 
-static inline void AssertImpl(bool expr) {
-  
+static __attribute__((always_inline)) bool AssertAssignmentTest(bool expr) {
+  return expr;
 }
 
-#define ASSERT_CHECK_ATTRIB(expr) AssertImpl(!(expr))
-
+#define UNLIKELY(x) (__builtin_expect(!!(x), 0))
+#define CRASH() do { } while(0)
+#define CHECK_ASSIGNMENT(expr) !AssertAssignmentTest(!(expr))
 #define ASSERT(expr) \
-  ASSERT_CHECK_ATTRIB(expr) \
+do { \
+  if (UNLIKELY(!CHECK_ASSIGNMENT(expr))) { \
+    CRASH();\
+  } \
+}	while(0) \
 
 
-void TestAssertAttrib() {
-  int p;
+class TestOverloading {
+public:
+  int value;
+  // different operators
+  explicit operator bool() const { return (bool)value; }
+  TestOverloading& operator=(const int _val) { value = _val; return *this; }
+};
+
+void TestOverloadingFunc() {
+  TestOverloading p;
+  p.value = 2;
+  
+  ASSERT(p);
+  
+  ASSERT(p = 3);
+  
+  p = 3;
+}
+
+void TestSimple() {
+  int p = 2;
+  
   ASSERT(p = 2);
 }
 

@@ -46,16 +46,11 @@ namespace clang {
       }
     }
   
-  
-    AST_MATCHER(CallExpr, isAssertion) {
-      static const std::string assertName = "AssertImpl";
+    AST_MATCHER(CallExpr, isAssertionWithAssignment) {
+      static const std::string assertName = "AssertAssignmentTest";
       const FunctionDecl *method = Node.getDirectCallee();
-      
-      std::cout<<method->getName().data();
-      
-      if (method->getName() == assertName)
-        return true;
-      return false;
+
+      return method && method->getDeclName().isIdentifier() && method->getName() == assertName;
     }
   }
 }

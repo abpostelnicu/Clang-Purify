@@ -12,26 +12,22 @@
 #include <unordered_map>
 #include <ostream>
 
-#include "NonInitializedMemberChecker.h"
-#include "AssertAttributionChecker.h"
-#include "AstCustomMatchers.h"
-#include "ClangParser.h"
-#include "Debug.h"
-#include "ClangDefines.h"
+#include "Checkers.h"
 #include "Config.h"
-
+#include "ClangParser.h"
+#include "ClangDefines.h"
+#include "Debug.h"
 
 
 int main(int argc, const char **argv) {
-
   ClangParser parser;
   const char **arguments = nullptr;
   int argCount = 0;
   MatchFinder finder;
   DiagnosticsMatcher::NonInitializedMemberChecker nonInitializedMemberChecker;
-  DiagnosticsMatcher::AssertAttributionChecker    assertAttributionChecker;
+  DiagnosticsMatcher::AssertAssignmentChecker     assertAttributionChecker;
   
-  finder.addMatcher(callExpr(isAssertion())
+  finder.addMatcher(callExpr(isAssertionWithAssignment())
                     .bind("funcCall"), &assertAttributionChecker);
   
   finder.addMatcher(cxxRecordDecl(isInterestingForUninitializedInCtor())
