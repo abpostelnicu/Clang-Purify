@@ -19,19 +19,25 @@
 #include "Debug.h"
 
 
-int main(int argc, const char **argv) {
+int main(int argc, const char **argv) {  
   ClangParser parser;
   const char **arguments = nullptr;
   int argCount = 0;
   MatchFinder finder;
-  DiagnosticsMatcher::NonInitializedMemberChecker nonInitializedMemberChecker;
-  DiagnosticsMatcher::AssertAssignmentChecker     assertAttributionChecker;
+  DiagnosticsMatcher::NonInitializedMemberChecker         nonInitializedMemberChecker;
+  DiagnosticsMatcher::AssertAssignmentChecker             assertAttributionChecker;
+  DiagnosticsMatcher::RestrictedOverloadedOperatorChecker restrictedOverloadedChecker;
   
   finder.addMatcher(callExpr(isAssertionWithAssignment())
                     .bind("funcCall"), &assertAttributionChecker);
   
   finder.addMatcher(cxxRecordDecl(isInterestingForUninitializedInCtor())
                     .bind("class"), &nonInitializedMemberChecker);
+
+  finder.addMatcher(cxxMethodDecl(isMethodSuitable())
+                    .bind("methodDecl"), &restrictedOverloadedChecker);
+
+  
 
 #if USE_TEST_MODE
   arguments = (const char**)CppTestsList;

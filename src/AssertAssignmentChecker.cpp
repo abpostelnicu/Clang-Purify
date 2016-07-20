@@ -7,67 +7,38 @@
 //
 
 #include "AssertAssignmentChecker.h"
+#include "clang/AST/EvaluatedExprVisitor.h"
+
+bool HasSideEffectAssignment(const Expr *expr) {
+  
+  if (auto opCallExpr = dyn_cast<CXXOperatorCallExpr>(expr)) {
+      auto binOp = opCallExpr->getOperator();
+    if (binOp == OO_Equal || (binOp >= OO_PlusEqual && binOp <= OO_PipeEqual)) {
+        return true;
+    }
+  } else if (auto binOpExpr = dyn_cast_or_null<BinaryOperator>(expr)) {
+    if (binOpExpr->isAssignmentOp()) {
+      return true;
+    }
+  }
+
+  // Recurse to children.
+  for (const Stmt *SubStmt : expr->children()) {
+    auto childExpr = dyn_cast_or_null<Expr>(SubStmt);
+    if (SubStmt && HasSideEffectAssignment(childExpr))
+      return true;
+  }
+  
+  return false;
+}
 
 void DiagnosticsMatcher::AssertAssignmentChecker::run(const MatchFinder::MatchResult &Result) {
   DiagnosticsEngine &Diag = Result.Context->getDiagnostics();
   unsigned assignInsteadOfComp = Diag.getDiagnosticIDs()->getCustomDiagID(
       DiagnosticIDs::Error, "Forbidden assignment in assert expression");
-  
-  bool foundError = false;
   const CallExpr *funcCall = Result.Nodes.getNodeAs<CallExpr>("funcCall");
   
-  if (!funcCall) {
-    return;
-  }
-  
-  // Evaluate first parameter from the call list
-  Expr *exprArg = const_cast<Expr*>(funcCall->getArg(0));
-  
-  // Ignore all implicit castings that are done
-  exprArg = exprArg->IgnoreImplicit();
-  
-  // The syntax of the call argument will look similar with:
-  // !(Expr)
-  // First there is an UnaryOperator followed by ParenExpr
-  const UnaryOperator *unOp = dyn_cast_or_null<UnaryOperator>(exprArg);
-  
-  if (!unOp) {
-    return;
-  }
-  
-  Expr *unOpResExpr = unOp->getSubExpr();
-  
-  if (!unOpResExpr) {
-    return;
-  }
-  
-  // Strip off any ParenExpr or ImplicitCastExprs
-  unOpResExpr = unOpResExpr->IgnoreParenImpCasts();
-  
-  // For normal primitives there should follow a BinaryOperator of BO_Assign
-  // type but for classes that have overloaded "operator =" there will be a
-  // CXXMemberCallExpr with an implicit argument of CXXOperatorCallExpr
-  if (const BinaryOperator *binOp = dyn_cast_or_null<BinaryOperator>(unOpResExpr)) {
-    if (binOp->getOpcode() == BO_Assign) {
-      foundError = true;
-    }
-  } else if (const CXXMemberCallExpr *callExpr = dyn_cast_or_null<CXXMemberCallExpr>(unOpResExpr)) {
-    Expr *subExpr = const_cast<Expr*>(callExpr->getImplicitObjectArgument());
-    
-    if (!subExpr) {
-      return;
-    }
-    
-    subExpr = subExpr->IgnoreParenImpCasts();
-    
-    if (CXXOperatorCallExpr *opCall = dyn_cast_or_null<CXXOperatorCallExpr>(subExpr)) {
-      if (opCall->getOperator() == OO_Equal) {
-        foundError = true;
-      }
-    }
-  }
-  
-  if (foundError) {
+  if (funcCall && HasSideEffectAssignment(funcCall)) {
     Diag.Report(funcCall->getLocStart(), assignInsteadOfComp);
   }
 }

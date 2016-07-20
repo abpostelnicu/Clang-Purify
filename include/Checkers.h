@@ -12,5 +12,6 @@
 #include "AstCustomMatchers.h"
 #include "NonInitializedMemberChecker.h"
 #include "AssertAssignmentChecker.h"
+#include "RestrictedOverloadedOperatorChecker.h"
 
 #endif /* Checkers_h */
