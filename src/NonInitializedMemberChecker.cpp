@@ -1,8 +1,8 @@
 #include "NonInitializedMemberChecker.h"
 
 StringRef DiagnosticsMatcher::NonInitializedMemberChecker::resolveMapVar(
-    std::unordered_map<std::string, std::string>& resolverMap,
-    StringRef varName) {
+                                                                         std::unordered_map<std::string, std::string>& resolverMap,
+                                                                         StringRef varName) {
   auto varFromMap = resolverMap.find(varName);
   if (varFromMap != resolverMap.end()) {
     // variable found in resolve map that means we must use it's corespondent
@@ -51,10 +51,10 @@ getVarNameFromExprWithThisCheck(Expr *expr, StringRef& varName) {
 }
 
 bool DiagnosticsMatcher::NonInitializedMemberChecker::buildResolverMap(
-    CallExpr *callExpr,
-    std::unordered_map<std::string, std::string>& resolverMap,
-    std::unordered_map<std::string, std::string>& newResolverMap) {
-
+                                                                       CallExpr *callExpr,
+                                                                       std::unordered_map<std::string, std::string>& resolverMap,
+                                                                       std::unordered_map<std::string, std::string>& newResolverMap) {
+  
   // use callExp to see what it needs to be pushed by address or reference,
   // if we are in any of these 2 situations lookup variable in both resolveMap
   // and variablesMap in order to have a direct corellation in the new function
@@ -64,29 +64,29 @@ bool DiagnosticsMatcher::NonInitializedMemberChecker::buildResolverMap(
   // from resoveMap to newResolveMap and at the end of the function we would
   // have popped them back thus needing to have more maps for tracking results
   // from called function
-
+  
   FunctionDecl *method = callExpr->getDirectCallee();
   // optimization for extern function to limit their call only if their,
   // arguments are passed by address or reference and are already referenced in
   // resolveMap
   bool isInteresting  = false;
-
+  
   if (!method) {
     return false;
   }
-
+  
   for (unsigned i = 0; i < method->getNumParams(); i++) {
     auto *param = method->getParamDecl(i);
-
+    
     if (param->getType()->isAnyPointerType() ||
         param->getType()->isReferenceType()) {
-
+      
       Expr *argument = callExpr->getArg(i);
       assert(argument);
-
+      
       StringRef expVarName;
       bool isFromThis = getVarNameFromExprWithThisCheck(argument, expVarName);
-
+      
       if (expVarName.size()) {
         // if variable is member of this do not check it in resolverMap
         if (isFromThis) {
@@ -107,27 +107,29 @@ bool DiagnosticsMatcher::NonInitializedMemberChecker::buildResolverMap(
 }
 
 void DiagnosticsMatcher::NonInitializedMemberChecker::updateVarMap(
-  std::unordered_map<std::string, bool>& variablesMap,
-  StringRef varName) {
-
-  variablesMap[varName] = true;
-    
+                                                                   std::unordered_map<std::string, InitFlag>& variablesMap,
+                                                                   StringRef varName, InitFlag flag) {
+  // Only set it if it's unset since this could also be set by Init functions
+  // with InitByFunc
+  if (variablesMap[varName] == InitFlag::NotInit) {
+    variablesMap[varName] = flag;
+  }
 }
 
 void DiagnosticsMatcher::NonInitializedMemberChecker::checkValueDecl(
-    Expr *expr, std::unordered_map<std::string, bool>& variablesMap,
-    std::unordered_map<std::string, std::string>& resolverMap) {
+                                                                     Expr *expr, std::unordered_map<std::string, InitFlag>& variablesMap,
+                                                                     std::unordered_map<std::string, std::string>& resolverMap, InitFlag flag) {
   expr = expr->IgnoreImplicit();
   MemberExpr *memberExpr = dyn_cast_or_null<MemberExpr>(expr);
   StringRef varFromExpr;
-
+  
   // And it has to be a member of 'this'.
   if (memberExpr && isa<CXXThisExpr>(memberExpr->getBase())) {
     if (!memberExpr->getMemberDecl()) {
       return;
     }
     varFromExpr = memberExpr->getMemberDecl()->getName();
-    updateVarMap(variablesMap, varFromExpr);
+    updateVarMap(variablesMap, varFromExpr, flag);
   } else {
     // maybe we should use the resolverMap since a member of |this| could
     // have been passed by reference or address
@@ -138,7 +140,7 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::checkValueDecl(
       }
       varFromExpr = resolveMapVar(resolverMap, declExpr->getDecl()->getName());
       if (!varFromExpr.empty()) {
-        updateVarMap(variablesMap, varFromExpr);
+        updateVarMap(variablesMap, varFromExpr, flag);
       }
     } else {
       // if variable is dereferenced means it could have been passed by address
@@ -152,7 +154,7 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::checkValueDecl(
         if (!varExp) {
           return;
         }
-        checkValueDecl(varExp, variablesMap, resolverMap);
+        checkValueDecl(varExp, variablesMap, resolverMap, flag);
       }
     }
   }
@@ -160,9 +162,9 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::checkValueDecl(
 
 void DiagnosticsMatcher::NonInitializedMemberChecker::
 runThroughDefaultFunctions(CallExpr *funcCall,
-    std::unordered_map<std::string, bool>& variablesMap,
-    std::unordered_map<std::string, std::string>& resolverMap) {
-
+                           std::unordered_map<std::string, InitFlag>& variablesMap,
+                           std::unordered_map<std::string, std::string>& resolverMap, InitFlag flag) {
+  
   static struct externFuncDefinition {
     std::string funcName;
     uint8_t indexInArgList;
@@ -171,15 +173,15 @@ runThroughDefaultFunctions(CallExpr *funcCall,
     {"memset", 0}
   };
   static uint8_t numberOfFuncs = sizeof(funcSchemaArray) /
-      sizeof(externFuncDefinition) ;
-
+  sizeof(externFuncDefinition) ;
+  
   FunctionDecl *method = funcCall->getDirectCallee();
-
+  
   // if method cannot be looked up continue
   if (!method) {
     return;
   }
-
+  
   for (int i = 0; i < numberOfFuncs; i++) {
     externFuncDefinition &funcSchema = funcSchemaArray[i];
     if (funcSchema.funcName == method->getName().data() ) {
@@ -187,14 +189,15 @@ runThroughDefaultFunctions(CallExpr *funcCall,
       if (!exprArg) {
         return;
       }
-      checkValueDecl(exprArg, variablesMap, resolverMap);
+      checkValueDecl(exprArg, variablesMap, resolverMap, flag);
     }
   }
 }
 
 void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
-  Stmt *stmtExpr, std::unordered_map<std::string, bool>& variablesMap,
-  std::unordered_map<std::string, std::string>& resolverMap, uint8_t depth) {
+                                                                         Stmt *stmtExpr, std::unordered_map<std::string, InitFlag>& variablesMap,
+                                                                         std::unordered_map<std::string, std::string>& resolverMap, uint8_t depth,
+                                                                         InitFlag flag) {
   stmtExpr = stmtExpr->IgnoreImplicit();
   
   // Check depth and if it's equal equal with MAX_DEPTH return
@@ -210,32 +213,36 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
       if (!exprLeft) {
         return;
       }
-      checkValueDecl(exprLeft, variablesMap, resolverMap);
+      checkValueDecl(exprLeft, variablesMap, resolverMap, flag);
       Expr *exprRight = binOp->getRHS();
       if (!exprRight) {
         return;
       }
-      evaluateExpression(exprRight, variablesMap, resolverMap, depth + 1);
+      evaluateExpression(exprRight, variablesMap, resolverMap, depth + 1, flag);
     }
   } else if (IfStmt *ifStmt = dyn_cast_or_null<IfStmt>(stmtExpr)){
     // If this is an if statement go through then and else statements,
     // if else statement is not present just skip it
     Stmt *thenStmt = ifStmt->getThen();
     Stmt *elseStmt = ifStmt->getElse();
-      
+    
     if (thenStmt && elseStmt) {
-      std::unordered_map<std::string, bool> thenMap;
-      std::unordered_map<std::string, bool> elseMap;
-          
-      evaluateExpression(thenStmt, thenMap, resolverMap, depth + 1);
-      evaluateExpression(elseStmt, elseMap, resolverMap, depth + 1);
-          
+      std::unordered_map<std::string, InitFlag> thenMap;
+      std::unordered_map<std::string, InitFlag> elseMap;
+      
+      evaluateExpression(thenStmt, thenMap, resolverMap, depth + 1, flag);
+      evaluateExpression(elseStmt, elseMap, resolverMap, depth + 1, flag);
+      
       // Loop through the thenMap and elseMap and look for the same variables
       // set to true  and add to variablesMap only the elements that are present
       // in both maps set to true
       for (auto& item: thenMap) {
-        if (item.second && elseMap[item.first]) {
-          variablesMap[item.first] = item.second;
+        if (item.second) {
+          std::unordered_map<std::string, InitFlag>::const_iterator itemElse =
+          elseMap.find(item.first);
+          if (itemElse != elseMap.end() && itemElse->second) {
+            variablesMap[item.first] = item.second;
+          }
         }
       }
     }
@@ -243,24 +250,42 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
     // If this is a ForStmt go through it's body Stmt
     Stmt *bodyFor = forStmt->getBody();
     if (bodyFor) {
-      evaluateExpression(bodyFor, variablesMap, resolverMap, depth + 1);
+      evaluateExpression(bodyFor, variablesMap, resolverMap, depth + 1, flag);
     }
   }  else if (WhileStmt *whileStmt = dyn_cast_or_null<WhileStmt>(stmtExpr)) {
     // If this is a WhileStmt go through it's body Stmt
     Stmt *bodyWhile = whileStmt->getBody();
     if (bodyWhile) {
-      evaluateExpression(bodyWhile, variablesMap, resolverMap, depth + 1);
+      evaluateExpression(bodyWhile, variablesMap, resolverMap, depth + 1, flag);
     }
   } else if (DoStmt *doStmt = dyn_cast_or_null<DoStmt>(stmtExpr)) {
     // If this is a DoStmt go through it's body Stmt
     Stmt *bodyDo = doStmt->getBody();
     if (bodyDo) {
-      evaluateExpression(bodyDo, variablesMap, resolverMap, depth + 1);
+      evaluateExpression(bodyDo, variablesMap, resolverMap, depth + 1, flag);
     }
   } else if (CompoundStmt *cmpdStmt = dyn_cast_or_null<CompoundStmt>(stmtExpr)) {
     // This Stmt is actually CompoundStmt then loop through all it's children
     for (auto child : cmpdStmt->children()) {
-      evaluateExpression(child, variablesMap, resolverMap, depth + 1);
+      evaluateExpression(child, variablesMap, resolverMap, depth + 1, flag);
+    }
+  } else if (CXXMemberCallExpr *memberFuncCall = dyn_cast_or_null<CXXMemberCallExpr>(stmtExpr)) {
+    FunctionDecl *method = memberFuncCall->getDirectCallee();
+    if (!method) {
+      return;
+    }
+
+    if (!method->hasBody()) {
+      return;
+    }
+    
+    Stmt *stmt = method->getBody();
+    
+    std::unordered_map<std::string, std::string> newResolverMap;
+    bool isValid = buildResolverMap(memberFuncCall, resolverMap, newResolverMap);
+    
+    if (isValid || isa<CXXThisExpr>(memberFuncCall->getImplicitObjectArgument())) {
+      evaluateExpression(stmt, variablesMap, newResolverMap, depth + 1, flag);
     }
   } else if (CallExpr *funcCall = dyn_cast_or_null<CallExpr>(stmtExpr)) {
     // This is a CallExpr if it has body analyze it else maybe it's a default
@@ -269,59 +294,43 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
     if (!method) {
       return;
     }
-    if (method->hasBody()) {
-      Stmt *stmt = method->getBody();
-
-      // if method doesn't have statements exit
-      if (!stmt) {
-        return;
-      }
-
-      std::unordered_map<std::string, std::string> newResolverMap;
-      bool isValid = buildResolverMap(funcCall, resolverMap, newResolverMap);
-      // recursive call evaluateExpression
-      if (isValid) {
-        evaluateExpression(stmt, variablesMap, newResolverMap, depth + 1);
-      } else {
-        // check to if it's member call expr
-        CXXMemberCallExpr *memberFuncCall =
-            dyn_cast_or_null<CXXMemberCallExpr>(stmtExpr);
-
-        if (memberFuncCall && isa<CXXThisExpr>(
-            memberFuncCall->getImplicitObjectArgument())) {
-          evaluateExpression(stmt, variablesMap, newResolverMap, depth + 1);
-        }
-      }
-    } else {
+    
+    StringRef funcName = method->getName();
+    
+    if (!method->hasBody()) {
+      return;
+    }
+    
+    Stmt *stmt = method->getBody();
+    
+    int childCount = funcCall->children()
+    
+    std::unordered_map<std::string, std::string> newResolverMap;
+    bool isValid = buildResolverMap(funcCall, resolverMap, newResolverMap);
+    // recursive call evaluateExpression
+    if (isValid) {
+      evaluateExpression(stmt, variablesMap, newResolverMap, depth + 1, flag);
+    }
+  } else {
       // we are dealing with some default function that are implemented
       // in StdC like memset
-      runThroughDefaultFunctions(funcCall, variablesMap, resolverMap);
-    }
+      runThroughDefaultFunctions(funcCall, variablesMap, resolverMap, flag);
   }
 }
 
 void DiagnosticsMatcher::NonInitializedMemberChecker::run(
-  const MatchFinder::MatchResult &Result) {
+                                                          const MatchFinder::MatchResult &Result) {
   DiagnosticsEngine &Diag = Result.Context->getDiagnostics();
   unsigned nonInitializedMemberID = Diag.getDiagnosticIDs()->getCustomDiagID(
-      DiagnosticIDs::Error,
-      "%0 is not correctly initialialized in the constructor of %1");
-  std::unordered_map<std::string, bool> variablesMap;
+                                                                             DiagnosticIDs::Error,
+                                                                             "%0 is not correctly initialialized in the constructor of %1");
+  std::unordered_map<std::string, InitFlag> variablesMap;
   std::unordered_map<std::string, std::string> resolverMap;
   const CXXRecordDecl *decl = Result.Nodes.getNodeAs<CXXRecordDecl>("class");
-
+  
   // maybe something strange and decl = nullptr
   if (!decl) {
     return;
-  }
-  
-  // In some particular cases we have overloaded new operator so in this
-  // case do not continue the analysis because most likely there will be
-  // a memset performed on |this|
-  for (auto method : decl->methods()) {
-    if (method->getDeclName().getCXXOverloadedOperator() == OO_New) {
-      return;
-    }
   }
   
   // For each field, if they are builtinType and or if they are pointer add
@@ -334,43 +343,58 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::run(
       continue;
     }
     // add variable to the table
-    variablesMap[field->getName()] = false;
+    variablesMap[field->getName()] = InitFlag::NotInit;
   }
-
+  
+  // First look for functions that are marked as being part of the initialization
+  // process and scan though them before looking at constructors since in this way
+  // we can avoid popping false-positive errors for variables that are not
+  // initialized in the constructor
+  /*for (auto method : decl->methods()) {
+    Stmt *funcBody = method->getBody();
+    
+    if (!funcBody) {
+      continue;
+    }
+    
+    evaluateExpression(funcBody, variablesMap, resolverMap, 0,
+                       InitFlag::InitByFunc);
+  }*/
+  
   // loop through all constructors and search for initializations or
   // attributions
   for (auto ctor : decl->ctors()) {
-
+    
     // Ignore copy, move or compiler generated constructor
     if (ctor->isCopyOrMoveConstructor() || ctor->isImplicit()) {
       continue;
     }
-
+    
     // This is when definition is done outside of declaration
     // loop through the redecls and get the one that is different
     // than the current ctor since it will be the definition.
     if (!ctor->isThisDeclarationADefinition()) {
       for (auto ctorFromList : ctor->redecls()) {
         CXXConstructorDecl *ctr = dyn_cast_or_null<CXXConstructorDecl>(
-            ctorFromList);
-
+                                                                       ctorFromList);
+        
         if (ctr && ctr->isThisDeclarationADefinition()) {
           ctor = ctr;
           break;
         }
       }
     }
-
+    
     // If we didn't find a definition, skip this declaration.
     if (!ctor->isThisDeclarationADefinition()) {
       continue;
     }
-
+    
     Stmt *body = ctor->getBody();
     if (!body) {
       continue;
     }
-
+    
     // first look to see if it's a C++11 declaration Ex. int a = 2 or a(2)
     for (auto init : ctor->inits()){
       FieldDecl *variable = init->getMember();
@@ -379,23 +403,27 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::run(
       }
       // do not lookup variable in hash table, since we know that in
       // this context only member variables are allowed
-      variablesMap[variable->getName()] = true;
+      variablesMap[variable->getName()] = InitFlag::InitByCtor;
     }
-
+    
     // Maybe it's initialized in the body.
-    evaluateExpression(body, variablesMap, resolverMap, 0);
-
+    // We start at depth = 0
+    evaluateExpression(body, variablesMap, resolverMap, 0, InitFlag::InitByCtor);
+    
     // look through the map for unmarked variables and pop error message, also
-    // reset the ones that are set for the following ctor to add it
+    // reset the ones that are set by the ctor
     for(auto varIt =  variablesMap.begin(); varIt != variablesMap.end();
         varIt++) {
-      // for the ones that are false print error message, for the found ones
-      // refresh the data for the next constructor
+      // first check to see if the current var is not init in the init functions
+      // if so we are not interested to see if it's init or not
       if (!varIt->second) {
         Diag.Report(ctor->getLocation(), nonInitializedMemberID)
-          << varIt->first << ctor;
+        << varIt->first << ctor;
       } else {
-        varIt->second = false;
+        // Reset it only if it was init by ctor
+        if (varIt->second == InitFlag::InitByCtor) {
+          varIt->second = InitFlag::NotInit;
+        }
       }
     }
   }

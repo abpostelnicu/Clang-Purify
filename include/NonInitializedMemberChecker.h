@@ -27,24 +27,31 @@ namespace DiagnosticsMatcher {
   public:
     virtual void run(const MatchFinder::MatchResult &Result);
   private:
+    // Max depth to witch we perform analysis on the AST
+    const uint8_t MaxDepth = 100;
+    enum InitFlag : uint8_t {
+      NotInit,
+      InitByCtor,
+      InitByFunc
+    };
     void runThroughDefaultFunctions(CallExpr *callExpr,
-      std::unordered_map<std::string, bool>& variablesMap,
-      std::unordered_map<std::string, std::string>& resolverMap);
+                                    std::unordered_map<std::string, InitFlag>& variablesMap,
+                                    std::unordered_map<std::string, std::string>& resolverMap, InitFlag flag);
     void checkValueDecl(Expr *exp,
-      std::unordered_map<std::string, bool>& variablesMap,
-      std::unordered_map<std::string, std::string>& resolverMap);
+                        std::unordered_map<std::string, InitFlag>& variablesMap,
+                        std::unordered_map<std::string, std::string>& resolverMap, InitFlag flag);
     StringRef resolveMapVar(
-      std::unordered_map<std::string, std::string>& resolverMap, StringRef varName);
-    void updateVarMap(std::unordered_map<std::string, bool>& variablesMap,
-      StringRef varName);
+                            std::unordered_map<std::string, std::string>& resolverMap, StringRef varName);
+    void updateVarMap(std::unordered_map<std::string, InitFlag>& variablesMap,
+                      StringRef varName, InitFlag flag);
     bool buildResolverMap(CallExpr *callExp,
-      std::unordered_map<std::string, std::string>& resolverMap,
-      std::unordered_map<std::string, std::string>& newResolverMap);
+                          std::unordered_map<std::string, std::string>& resolverMap,
+                          std::unordered_map<std::string, std::string>& newResolverMap);
     bool getVarNameFromExprWithThisCheck(Expr *expr, StringRef& varName);
     void evaluateExpression(Stmt *stmtExpr,
-      std::unordered_map<std::string, bool>& variablesMap,
-      std::unordered_map<std::string, std::string>& resolverMap,
-      uint8_t depth);
+                            std::unordered_map<std::string, InitFlag>& variablesMap,
+                            std::unordered_map<std::string, std::string>& resolverMap, uint8_t depth,
+                            InitFlag flag);
   };
 }
 
