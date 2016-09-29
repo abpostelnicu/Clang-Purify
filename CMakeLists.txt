@@ -17,8 +17,7 @@ if (CLANG_VERSION_STRING VERSION_LESS 3.8)
 endif()
 
 
-
-SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -std=c++11 -stdlib=libc++ -v")
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti  -stdlib=libc++ -v")
 
 add_definitions(
         -D__STDC_LIMIT_MACROS
@@ -139,6 +138,7 @@ target_link_libraries(Clang-Purify
         LLVMBitReader # Core, Support
         LLVMCore
         LLVMSupport
+        LLVMProfileData
         z
         dl
         pthread
