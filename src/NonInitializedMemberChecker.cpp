@@ -295,15 +295,11 @@ void DiagnosticsMatcher::NonInitializedMemberChecker::evaluateExpression(
       return;
     }
     
-    StringRef funcName = method->getName();
-    
     if (!method->hasBody()) {
       return;
     }
     
     Stmt *stmt = method->getBody();
-    
-    int childCount = funcCall->children()
     
     std::unordered_map<std::string, std::string> newResolverMap;
     bool isValid = buildResolverMap(funcCall, resolverMap, newResolverMap);
