@@ -13,5 +13,5 @@
 #include "NonInitializedMemberChecker.h"
 #include "AssertAssignmentChecker.h"
 #include "RestrictedOverloadedOperatorChecker.h"
-
+#include "OverridebaseCallCheck.h"
 #endif /* Checkers_h */
