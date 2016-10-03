@@ -120,6 +120,13 @@ namespace clang {
         return true;
       }
     }
+    
+    AST_MATCHER(CXXRecordDecl, doesClassInherits) {
+      const CXXRecordDecl *decl = Node.getCanonicalDecl();
+      
+      // Must have definition and should inherit other classes
+      return decl && decl->hasDefinition() && decl->getNumBases();
+    }
   }
 }
 

@@ -17,6 +17,7 @@
 // List of test files included in test directory
 const char * const CppTestsList[] = {
   TEST_FILES_PATH "/TestOne.cpp",
+  TEST_FILES_PATH "/TestOverrideBaseCall.cpp"
 };
 
 #endif

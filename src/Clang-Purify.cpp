@@ -27,17 +27,19 @@ int main(int argc, const char **argv) {
   DiagnosticsMatcher::NonInitializedMemberChecker         nonInitializedMemberChecker;
   DiagnosticsMatcher::AssertAssignmentChecker             assertAttributionChecker;
   DiagnosticsMatcher::RestrictedOverloadedOperatorChecker restrictedOverloadedChecker;
-  DiagnosticsMatcher::OverridebaseCallCheck               overridebaseCallCheck;
+  DiagnosticsMatcher::OverrideBaseCallCheck               overrideBaseCallCheck;
   
-  finder.addMatcher(callExpr(isAssertionWithAssignment())
-                    .bind("funcCall"), &assertAttributionChecker);
+  finder.addMatcher(callExpr(isAssertionWithAssignment()).bind("funcCall"),
+                    &assertAttributionChecker);
   
-  finder.addMatcher(cxxRecordDecl(isInterestingForUninitializedInCtor())
-                    .bind("class"), &nonInitializedMemberChecker);
+  finder.addMatcher(cxxRecordDecl(isInterestingForUninitializedInCtor()).bind("class"),
+                    &nonInitializedMemberChecker);
 
-  finder.addMatcher(cxxMethodDecl(isMethodSuitable())
-                    .bind("methodDecl"), &restrictedOverloadedChecker);
-
+  finder.addMatcher(cxxMethodDecl(isMethodSuitable()).bind("methodDecl"),
+                    &restrictedOverloadedChecker);
+  
+  finder.addMatcher(cxxRecordDecl(doesClassInherits()).bind("class"),
+                    &overrideBaseCallCheck);
   
 
 #if USE_TEST_MODE
