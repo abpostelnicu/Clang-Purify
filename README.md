@@ -5,5 +5,6 @@ List of checkers that are implemented so far:
  - uninitialised members check, with deep search in called function from CTOR;
  - side effects in assert functions - like assert(a=2);
  - restricted use of specific overloaded operator;
+ - call to base function from override function when base function is marked with specific annotation;
  
  The list will be updated as new checkers will be in place.
