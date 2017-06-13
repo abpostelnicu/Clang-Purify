@@ -20,6 +20,10 @@ ClangParser::ClangParser() {
   // Diagnostics is needed - set it up
   m_CompilerInstance.createDiagnostics();
 
+  m_VerifDiagConsumer = new clang::VerifyDiagnosticConsumer(m_CompilerInstance.getDiagnostics());
+
+  m_CompilerInstance.getDiagnostics().setClient(m_VerifDiagConsumer);
+
   // set few options
   clang::LangOptions& langOptions = m_CompilerInstance.getLangOpts();
   langOptions.CPlusPlus = 1;
