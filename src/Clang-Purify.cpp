@@ -28,7 +28,7 @@ int main(int argc, const char **argv) {
   DiagnosticsMatcher::AssertAssignmentChecker             assertAttributionChecker;
   DiagnosticsMatcher::RestrictedOverloadedOperatorChecker restrictedOverloadedChecker;
   DiagnosticsMatcher::OverrideBaseCallCheck               overrideBaseCallCheck;
-  
+
   finder.addMatcher(callExpr(isAssertionWithAssignment()).bind("funcCall"),
                     &assertAttributionChecker);
   
