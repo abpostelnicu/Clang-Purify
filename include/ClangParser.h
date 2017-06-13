@@ -6,16 +6,17 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/VerifyDiagnosticConsumer.h"
 #include "clang/CodeGen/CodeGenAction.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Parse/ParseAST.h"
 #include "llvm/Support/Host.h"
-#include "ClangDefines.h"
 
 class ClangParser
 {
   clang::CompilerInstance m_CompilerInstance;
+  clang::VerifyDiagnosticConsumer *m_VerifDiagConsumer;
   std::shared_ptr<clang::TargetOptions> m_TargetOptions;
   
   void prepareCompilerforFile(const char* szSourceCodeFilePath);
