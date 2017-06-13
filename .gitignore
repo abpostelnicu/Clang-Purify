@@ -1,1 +1,7 @@
 build/
+.vscode/
+CMakeCache.txt
+CMakeFiles/
+Clang-Purify
+Makefile
+cmake_install.cmake

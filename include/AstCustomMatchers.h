@@ -2,6 +2,8 @@
 #define AstCustomMatchers_h
 
 #include "ClangDefines.h"
+#include "llvm/Support/Path.h"
+#include <memory>
 
 namespace clang {
   namespace ast_matchers {

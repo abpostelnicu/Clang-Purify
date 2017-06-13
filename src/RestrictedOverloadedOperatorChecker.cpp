@@ -97,7 +97,7 @@ void DiagnosticsMatcher::RestrictedOverloadedOperatorChecker::run(const MatchFin
       "Not allowed operator new overloading");
   SearchVars vars;
   const CXXMethodDecl *method = Result.Nodes.getNodeAs<CXXMethodDecl>("methodDecl");
-  
+
   if (!method) {
     return;
   }
